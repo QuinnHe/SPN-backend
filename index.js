@@ -37,7 +37,7 @@ app.get('/api/drivers/:id', (req,res) => {
 
 app.post('/api/create-driver',(req,res)=>{
     const { error } = validateDriver(req.body); // access property "error" directly without declaring object "result"
-    if(error) return res.status(400).send(result.error);    // return to stop this function from executing due to error while sending the error code
+    if(error) return res.status(400).send(error.details[0].message);    // return to stop this function from executing due to error while sending the error code
 
     const driver = {
         id: drivers.length, // later id will be assigned by db
@@ -61,7 +61,7 @@ app.put('/api/drivers/:id', (req, res) => {
     // Validate
     // If invalid, return 400 - Bad Request
     const { error } = validateDriver(req.body);
-    if(error) return res.status(400).send(result.error);
+    if(error) return res.status(400).send(error.details[0].message);
 
     // Update driver
     // Return updated driver
@@ -96,10 +96,10 @@ app.listen(port,()=> console.log(`Listening on port ${port}...`));
 function validateDriver(driver){
     const schema = {
         name: Joi.string().min(3).required(),
-        location: Joi.array().items(Joi.number()),
-        destination: Joi.array().items(Joi.number()),
-        walkTime: Joi.number().min(0).max(20),
-        cost: Joi.number().min(0)
+        location: Joi.array().items(Joi.number()).length(2).required(),
+        destination: Joi.array().items(Joi.number()).length(2).required(),
+        walkTime: Joi.number().min(0).max(20).required(),
+        cost: Joi.number().min(0).required()
     };
     return Joi.validate(driver,schema);
 }
