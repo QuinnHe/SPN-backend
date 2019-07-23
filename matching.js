@@ -1,20 +1,80 @@
-function init() {
+const app = require("./app");
+const meter = require("./meter");
 
+
+const meterLocDict = {1:(10,20), 2:(20,30)};   // lat, lon
+const meterPriceDict = {1:10, 2:5};  // ¥/hr
+let meterPrefDict = {1:5, 2:5};  // meter's fiance driver's distance, by default 5km, meaning that the meters won't accept booking if driver currently locates outside 5km radius
+let meterPartnerDict = {1:-1, 2:-1};   // meter's fiance driver NOTE: should be a list of drivers in future, currently assuming one spot per meter
+
+
+// lon1, lat1, lon2, lat2
+function calc_dist_from_lat_lon(loc1, loc2) {
+    const R = 6371; // Radius of Earth in km
+    let rlat1 = Math.toRadians(loc1[1]);
+    let rlat2 = Math.toRadians(loc2[1]);
+    let dlon = Math.toRadians(loc2[0]-loc1[0]);
+    let dlat = Math.toRadians(loc2[1]-loc1[1]);
+
+    let a = Math.sin(dlat/2) * Math.sin(dlat/2) +
+            Math.cos(rlat1) * Math.cos(rlat2) *
+            Math.sin(dlon/2) * Math.sin(dlon/2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    let d = R * c;  // Distance in km
+    return d;
 }
 
 
-function DisEGS() {  
-    for (let key in meters) {
-        if(Math.random()>0.9999 & meters[key]>0){
-            meters[key] = meters[key]-1;
+function orderByDestMeterDist( a, b ) {
+    if ( a[1] < b[1] ){ return -1; }
+    if ( a[1] > b[1] ){ return 1; }
+    return 0;
+  }
+
+
+function genDriverPrefList(callback) {
+    for (let driver_idx = 0; driver_idx < app.driversList.length; driver_idx++) {
+        const driver = app.driversList[driver_idx];
+        for (const meterID in meterLocDict) {
+            let destMeterDist = calc_dist_from_lat_lon(driver.destination, meterLocDict[meterID]);
+            if (destMeterDist < driver.walkDist && meterPriceDict[meterID] < driver.price) { driver.prefList.push([meterID, destMeterDist]); }
+        }
+        driver.prefList.sort(orderByDestMeterDist).reverse();
+    }
+    callback();
+}
+
+
+function DisEGS() {
+    for (let driver_idx = 0; driver_idx < app.driversList.length; driver_idx++) {
+        const driver = app.driversList[driver_idx];
+        if (driver.spotId === -1 && driver.prefList.length > 0) {
+            driver.spotId = driver.prefList[0];
+            for (const meterID in meter.meterAvailDict) {
+                let locMeterDist = calc_dist_from_lat_lon(driver.location, meterLocDict[meter_id])
+                if (locMeterDist > meterPrefDict[meterID]) {
+                    driver.prefList.pop();
+                    driver.spotId = -1;
+                } else {
+                    if (meter.meterAvailDict[meterID] === 0) {
+                        const partner = app.driversList.find(c => c.id === meterPartnerDict[meterID]);  // NOTE: choose the first found driver to drop if multiple spots a meter
+                        partner.prefList.pop();
+                        partner.spotId = -1;
+                    }
+                    console.log("Spot under meterID:", meterID, "has been assigned to driver", driver.id);
+                    meterPartnerDict[meterID] = driver.id;
+                    meterPrefDict[meterID] = locMeterDist;
+                }
+            }
         }
     }
 }
 
+
 function interval_DisEGS(){
-    init();
-    setInterval(function() {  
-        DisEGS();
+    setInterval(function() {
+        genDriverPrefList(DisEGS);
     }, 5000);
 }
 
