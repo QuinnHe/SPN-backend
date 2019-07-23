@@ -8,10 +8,10 @@ const app = express();
 app.use(express.json());
 
 
-const drivers = [
-    {id:0, name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkTime: 10, cost: 10},
-    {id:1, name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkTime: 5, cost: 2}
-];
+let drivers = [
+    {id:0, name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1},
+    {id:1, name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1}
+];  // as examples
 
 meter.setMeterAvail();
 matching.doDisEGS();
@@ -35,6 +35,7 @@ app.get('/api/drivers/:id', (req,res) => {
     res.send(driver);   // res.send() can only be executed once!
 });
 
+// called by users
 app.post('/api/create-driver',(req,res)=>{
     const { error } = validateDriver(req.body); // access property "error" directly without declaring object "result"
     if(error) return res.status(400).send(error.details[0].message);    // return to stop this function from executing due to error while sending the error code
@@ -44,14 +45,17 @@ app.post('/api/create-driver',(req,res)=>{
         name: req.body.name,
         location: req.body.location,
         destination: req.body.destination,
-        walkTime: req.body.walkTime,
-        cost: req.body.cost
+        walkDist: req.body.walkDist,
+        price: req.body.price,
+        prefList: [-1, -1],
+        spotId: -1
     };
     drivers.push(driver);
-    // console.log(meter.meterAvail);
+    // console.log(meter.meterAvailDict);
     res.send(driver);
 });
 
+// called by server itself to update? or just to test...
 app.put('/api/drivers/:id', (req, res) => {
     // Look up driver
     // If not exist, return 404
@@ -68,8 +72,10 @@ app.put('/api/drivers/:id', (req, res) => {
     driver.name = req.body.name;
     driver.location = req.body.location;
     driver.destination = req.body.destination;
-    driver.walkTime = req.body.walkTime;
-    driver.cost = req.body.cost;
+    driver.walkDist = req.body.walkDist;
+    driver.price = req.body.price;
+    driver.prefList = req.body.prefList;
+    driver.spotId = req.body.spotId
     
     res.send(driver);
 })
@@ -88,6 +94,7 @@ app.delete('/api/drivers/:id', (req,res) => {
     res.send(driver);
 });
 
+module.exports.driversList = drivers;
 
 const port = process.env.PORT || 8000;
 app.listen(port,()=> console.log(`Listening on port ${port}...`));
@@ -98,8 +105,10 @@ function validateDriver(driver){
         name: Joi.string().min(3).required(),
         location: Joi.array().items(Joi.number()).length(2).required(),
         destination: Joi.array().items(Joi.number()).length(2).required(),
-        walkTime: Joi.number().min(0).max(20).required(),
-        cost: Joi.number().min(0).required()
+        walkDist: Joi.number().min(0).max(10).required(),
+        price: Joi.number().min(0).required(),
+        prefList: Joi.array().items(Joi.number()).required(),
+        spotId: Joi.number().required()
     };
     return Joi.validate(driver,schema);
 }
