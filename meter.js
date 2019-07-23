@@ -25,4 +25,4 @@ function setAvail(){
 }
 
 module.exports.setMeterAvail = setAvail;
-module.exports.meterAvail = meters;
+module.exports.meterAvailDict = meters;
