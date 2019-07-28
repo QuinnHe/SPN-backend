@@ -1,20 +1,43 @@
 const app = require("./app");
 const meter = require("./meter");
+const data = require('./data');
 
 
-const meterLocDict = {1:(10,20), 2:(20,30)};   // lat, lon
+// data.readMeterLocData()
+// .then((result) => {
+//     const meterLocDict = result;   // {'meterID': ['lon', 'lat']}
+//     console.log(meterLocDict);
+// }).catch((err) => {
+//     console.log(err);
+// });
+
+let meterLocDict = {};
+
+data.csvDataPromise.then((result) => {
+    meterLocDict = result;
+    console.log(meterLocDict[1183087]);
+});
+
+
+// const meterLocDict = {1:(10,20), 2:(20,30)};   // lat, lon
+
+
 const meterPriceDict = {1:10, 2:5};  // ¥/hr
 let meterPrefDict = {1:5, 2:5};  // meter's fiance driver's distance, by default 5km, meaning that the meters won't accept booking if driver currently locates outside 5km radius
 let meterPartnerDict = {1:-1, 2:-1};   // meter's fiance driver NOTE: should be a list of drivers in future, currently assuming one spot per meter
 
 
+function degToRad(deg) {
+    return deg * (Math.PI/180);
+}
+
 // lon1, lat1, lon2, lat2
 function calc_dist_from_lat_lon(loc1, loc2) {
     const R = 6371; // Radius of Earth in km
-    let rlat1 = Math.toRadians(loc1[1]);
-    let rlat2 = Math.toRadians(loc2[1]);
-    let dlon = Math.toRadians(loc2[0]-loc1[0]);
-    let dlat = Math.toRadians(loc2[1]-loc1[1]);
+    let rlat1 = degToRad(loc1[1]);
+    let rlat2 = degToRad(loc2[1]);
+    let dlon = degToRad(loc2[0]-loc1[0]);
+    let dlat = degToRad(loc2[1]-loc1[1]);
 
     let a = Math.sin(dlat/2) * Math.sin(dlat/2) +
             Math.cos(rlat1) * Math.cos(rlat2) *
@@ -52,7 +75,7 @@ function DisEGS() {
         if (driver.spotId === -1 && driver.prefList.length > 0) {
             driver.spotId = driver.prefList[0];
             for (const meterID in meter.meterAvailDict) {
-                let locMeterDist = calc_dist_from_lat_lon(driver.location, meterLocDict[meter_id])
+                let locMeterDist = calc_dist_from_lat_lon(driver.location, meterLocDict[meterID])
                 if (locMeterDist > meterPrefDict[meterID]) {
                     driver.prefList.pop();
                     driver.spotId = -1;
