@@ -50,11 +50,13 @@ function orderByDestMeterDist( a, b ) {
   function genDriverPrefList(rawMeterData) {
     for (const driverID in app.driversDict) {
         if (app.driversDict.hasOwnProperty(driverID)) {
+            let count = 0;
             for (const meterID in rawMeterData) {
                 if (rawMeterData.hasOwnProperty(meterID)) {
                     let destMeterDist = calc_dist_from_lat_lon(app.driversDict[driverID].destination, rawMeterData[meterID][0]);
-                    if (destMeterDist < app.driversDict[driverID].walkDist && meterPriceDict[meterID] < app.driversDict[driverID].price) {
+                    if (destMeterDist < app.driversDict[driverID].walkDist && rawMeterData[meterID][2] < app.driversDict[driverID].price && count < 5) {
                         app.driversDict[driverID].prefList.push([meterID, destMeterDist]);
+                        count += 1;
                     }
                 }
             }
@@ -76,13 +78,13 @@ function randomizeMeterAvail(rawMeterData) {
             if (prob > 0.9999 && rawMeterData[meterID][1]>0){
                 rawMeterData[meterID][1] += -1;
             }
-            else if (pro < 0.0001 && rawMeterData[meterID][1]<10){
+            else if (prob < 0.0001 && rawMeterData[meterID][1]<10){
                 rawMeterData[meterID][1] += 1;
             }
         }
     }
     //
-    console.log(rawMeterData[1183087]);
+    // console.log(rawMeterData[1183087]);
     return rawMeterData;
 }
 
@@ -102,7 +104,6 @@ function DisEGS(randomizedMeterData) {
                             app.driversDict[driverID].prefList.pop();
                             app.driversDict[driverID].spotId = -1;
                         } else {
-                            // remove meter stuff
                             if (meterProperties[1] === 0) {
                                 const partnerID = meterProperties[4];    // NOTE: choose the first found driver to drop if a meter has multiple spots 
                                 console.log(partnerID)
@@ -110,9 +111,12 @@ function DisEGS(randomizedMeterData) {
                                 app.driversDict[partnerID].prefList.pop();
                                 app.driversDict[partnerID].spotId = -1;
                             }
+
                             console.log("Spot under meterID:", meterID, "has been assigned to driver", driverID);
-                            randomizedMeterData[meterID][4] = driverID; // update partner
-                            randomizedMeterData[meterID][3] = locMeterDist; // update preference
+                            randomizedMeterData[meterID][4] = driverID; // update meter partner
+                            randomizedMeterData[meterID][3] = locMeterDist; // update meter preference
+                            randomizedMeterData[meterID][1] += -1; // update meter avail
+                            app.driversDict[driverID].spotID = meterID; // update driver spotID
                         }
                     }
                 }
@@ -125,6 +129,7 @@ function DisEGS(randomizedMeterData) {
 function interval_DisEGS(){
     setInterval(() => {
         // fetchData(genDriverPrefList(DisEGS))
+        console.log("tick");
         data.csvDataPromise
         .then((rawMeterData) => {
             genDriverPrefList(rawMeterData);
