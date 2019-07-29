@@ -12,13 +12,6 @@ const data = require('./data');
 // });
 
 let meterLocDict = {};
-
-data.csvDataPromise.then((result) => {
-    meterLocDict = result;
-    console.log(meterLocDict[1183087]);
-});
-
-
 // const meterLocDict = {1:(10,20), 2:(20,30)};   // lat, lon
 
 
@@ -54,6 +47,30 @@ function orderByDestMeterDist( a, b ) {
     if ( a[1] > b[1] ){ return 1; }
     return 0;
   }
+
+
+function fetchData(callback) {
+    data.csvDataPromise.then((result) => {
+        // Below block is to random-generate spot availability data        
+        for (const key in result) {
+            if (result.hasOwnProperty(key)) {
+                let prob = Math.random();
+                if (prob > 0.9999 && result[key]>0){
+                    result[key][2] += -1;
+                }
+                else if (pro < 0.0001 && result[key]<10){
+                    result[key][2] += 1;
+                }
+            }
+        }
+        //
+    
+        meterLocDict = result;
+        console.log(meterLocDict[1183087]);
+    });
+
+    callback();
+}
 
 
 function genDriverPrefList(callback) {
@@ -107,9 +124,10 @@ function DisEGS() {
 
 
 function interval_DisEGS(){
-    setInterval(function() {
-        genDriverPrefList(DisEGS);
-    }, 5000);
+    setInterval(
+        fetchData(genDriverPrefList(DisEGS)
+            ), 5000
+        );
 }
 
 module.exports.doDisEGS = interval_DisEGS;
