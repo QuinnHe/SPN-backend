@@ -1,7 +1,6 @@
 const Joi = require('@hapi/joi');
 const express = require('express');
 
-const meter = require('./meter');
 const matching = require('./matching');
 
 const app = express();
@@ -12,7 +11,6 @@ let driverCount = 2;
 drivers[0] = {name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1};
 drivers[1] = {name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1};    // as examples
 
-// meter.setMeterAvail();
 matching.main();
 
 app.get('/', (req,res ) => {
@@ -54,7 +52,6 @@ app.post('/api/create-driver',(req,res)=>{
         spotId: -1
     };
     drivers[driverCount] = driverProperies;
-    // console.log(meter.meterAvailDict);
     res.send(drivers);
     driverCount += 1;
 });

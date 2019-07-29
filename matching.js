@@ -1,5 +1,4 @@
 const app = require("./app");
-const meter = require("./meter");
 const data = require('./data');
 
 
@@ -93,7 +92,7 @@ function DisEGS(randomizedMeterData) {
         if (app.driversDict.hasOwnProperty(driverID)) {
             const driver = app.driversDict[driverID];   // dummy variable to save access and code
             if (driver.spotId === -1 && driver.prefList.length > 0) {
-                app.driversDict[driverID].spotId = driver.prefList[-1][0];
+                app.driversDict[driverID].spotId = driver.prefList[driver.prefList.length-1][0];
 
                 for (const meterID in randomizedMeterData) {
                     if (randomizedMeterData.hasOwnProperty(meterID)) {
@@ -103,40 +102,18 @@ function DisEGS(randomizedMeterData) {
                             app.driversDict[driverID].prefList.pop();
                             app.driversDict[driverID].spotId = -1;
                         } else {
-                            // here
-                            if (meter.meterAvailDict[meterID] === 0) {
-                                const partner = app.driversDict[meterPartnerDict[meterID]]; // NOTE: choose the first found driver to drop if multiple spots a meter
-                                console.log(partner)
+                            // remove meter stuff
+                            if (meterProperties[1] === 0) {
+                                const partnerID = meterProperties[4];    // NOTE: choose the first found driver to drop if a meter has multiple spots 
+                                console.log(partnerID)
                                 // const partner = app.driversDict.find(c => c.id === meterPartnerDict[meterID]);
-                                partner.prefList.pop();
-                                partner.spotId = -1;
+                                app.driversDict[partnerID].prefList.pop();
+                                app.driversDict[partnerID].spotId = -1;
                             }
-                            console.log("Spot under meterID:", meterID, "has been assigned to driver", driver.id);
-                            meterPartnerDict[meterID] = driver.id;
-                            meterPrefDict[meterID] = locMeterDist;
+                            console.log("Spot under meterID:", meterID, "has been assigned to driver", driverID);
+                            randomizedMeterData[meterID][4] = driverID; // update partner
+                            randomizedMeterData[meterID][3] = locMeterDist; // update preference
                         }
-
-
-                    }
-                }
-
-
-                for (const meterID in meter.meterAvailDict) {
-                    let locMeterDist = calc_dist_from_lat_lon(driver.location, meterLocDict[meterID]);
-                    if (locMeterDist > meterPrefDict[meterID]) {
-                        driver.prefList.pop();
-                        driver.spotId = -1;
-                    } else {
-                        if (meter.meterAvailDict[meterID] === 0) {
-                            const partner = app.driversDict[meterPartnerDict[meterID]]; // NOTE: choose the first found driver to drop if multiple spots a meter
-                            console.log(partner)
-                            // const partner = app.driversDict.find(c => c.id === meterPartnerDict[meterID]);
-                            partner.prefList.pop();
-                            partner.spotId = -1;
-                        }
-                        console.log("Spot under meterID:", meterID, "has been assigned to driver", driver.id);
-                        meterPartnerDict[meterID] = driver.id;
-                        meterPrefDict[meterID] = locMeterDist;
                     }
                 }
             }
