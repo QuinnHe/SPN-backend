@@ -9,7 +9,7 @@ const p1 = new Promise(function readCsv(resolve, reject) {
             reject(error);
         })
         .on('data', (data) => {
-            // csvData[meterID] = [[LON, LAT], avail, price, pref, partner ...]
+            // csvData[meterID] = [[LON, LAT], avail, price, pref, partner]
             csvData[data[0]] = [
                 [data[1], data[2]], Math.round(10 * Math.random()), Math.round(20 * Math.random()), 5, -1
             ];
