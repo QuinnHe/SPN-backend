@@ -57,37 +57,48 @@ function orderByDestMeterDist( a, b ) {
 
 
 function genDriverPrefList(callback) {
-    for (let driver_idx = 0; driver_idx < app.driversList.length; driver_idx++) {
-        const driver = app.driversList[driver_idx];
-        for (const meterID in meterLocDict) {
-            let destMeterDist = calc_dist_from_lat_lon(driver.destination, meterLocDict[meterID]);
-            if (destMeterDist < driver.walkDist && meterPriceDict[meterID] < driver.price) { driver.prefList.push([meterID, destMeterDist]); }
+    //  NOTE: change for ... in ... to Object.keys().foreach()
+    for (const key in app.driversDict) {
+        if (app.driversDict.hasOwnProperty(key)) {
+            const driver = app.driversDict[key];
+            for (const meterID in meterLocDict) {
+                let destMeterDist = calc_dist_from_lat_lon(driver.destination, meterLocDict[meterID]);
+                if (destMeterDist < driver.walkDist && meterPriceDict[meterID] < driver.price) { driver.prefList.push([meterID, destMeterDist]); }
+            }
+            driver.prefList.sort(orderByDestMeterDist);
+            // console.log(driver.prefList);
+            // console.log(app.driversDict);
+            //BUG: driver not global
         }
-        driver.prefList.sort(orderByDestMeterDist).reverse();
     }
+
     callback();
 }
 
 
 function DisEGS() {
-    for (let driver_idx = 0; driver_idx < app.driversList.length; driver_idx++) {
-        const driver = app.driversList[driver_idx];
-        if (driver.spotId === -1 && driver.prefList.length > 0) {
-            driver.spotId = driver.prefList[0];
-            for (const meterID in meter.meterAvailDict) {
-                let locMeterDist = calc_dist_from_lat_lon(driver.location, meterLocDict[meterID])
-                if (locMeterDist > meterPrefDict[meterID]) {
-                    driver.prefList.pop();
-                    driver.spotId = -1;
-                } else {
-                    if (meter.meterAvailDict[meterID] === 0) {
-                        const partner = app.driversList.find(c => c.id === meterPartnerDict[meterID]);  // NOTE: choose the first found driver to drop if multiple spots a meter
-                        partner.prefList.pop();
-                        partner.spotId = -1;
+    for (const key in app.driversDict) {
+        if (app.driversDict.hasOwnProperty(key)) {
+            const driver = app.driversDict[key];
+            if (driver.spotId === -1 && driver.prefList.length > 0) {
+                driver.spotId = driver.prefList[0];
+                for (const meterID in meter.meterAvailDict) {
+                    let locMeterDist = calc_dist_from_lat_lon(driver.location, meterLocDict[meterID])
+                    if (locMeterDist > meterPrefDict[meterID]) {
+                        driver.prefList.pop();
+                        driver.spotId = -1;
+                    } else {
+                        if (meter.meterAvailDict[meterID] === 0) {
+                            const partner = app.driversDict[meterPartnerDict[meterID]]; // NOTE: choose the first found driver to drop if multiple spots a meter
+                            console.log(partner)
+                            // const partner = app.driversDict.find(c => c.id === meterPartnerDict[meterID]);
+                            partner.prefList.pop();
+                            partner.spotId = -1;
+                        }
+                        console.log("Spot under meterID:", meterID, "has been assigned to driver", driver.id);
+                        meterPartnerDict[meterID] = driver.id;
+                        meterPrefDict[meterID] = locMeterDist;
                     }
-                    console.log("Spot under meterID:", meterID, "has been assigned to driver", driver.id);
-                    meterPartnerDict[meterID] = driver.id;
-                    meterPrefDict[meterID] = locMeterDist;
                 }
             }
         }

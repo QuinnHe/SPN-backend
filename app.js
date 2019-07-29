@@ -7,11 +7,10 @@ const matching = require('./matching');
 const app = express();
 app.use(express.json());
 
-
-let drivers = [
-    {id:0, name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1},
-    {id:1, name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1}
-];  // as examples
+let drivers = {};
+let driverCount = 2;
+drivers[0] = {name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1};
+drivers[1] = {name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1};    // as examples
 
 meter.setMeterAvail();
 matching.doDisEGS();
@@ -30,9 +29,13 @@ app.get('/api/drivers', (req,res) =>{
 
 app.get('/api/drivers/:id', (req,res) => {
     // res.send(req.params);
-    const driver = drivers.find(c => c.id === parseInt(req.params.id));
-    if (!driver) return res.status(404).send("The driver with given ID is not found.");
-    res.send(driver);   // res.send() can only be executed once!
+
+    // 2 lines below commented out due to change of drivers from an array to a dictionary object
+    // const driver = drivers.find(c => c.id === parseInt(req.params.id));
+    // if (!driver) return res.status(404).send("The driver with given ID is not found.");
+    const queryDriverID = req.params.id;
+    if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
+    res.send([queryDriverID, drivers[queryDriverID]]);   // res.send() can only be executed once!
 });
 
 // called by users
@@ -40,8 +43,8 @@ app.post('/api/create-driver',(req,res)=>{
     const { error } = validateDriver(req.body); // access property "error" directly without declaring object "result"
     if(error) return res.status(400).send(error.details[0].message);    // return to stop this function from executing due to error while sending the error code
 
-    const driver = {
-        id: drivers.length, // later id will be assigned by db
+    const driverProperies = {
+        // later id will be assigned by db
         name: req.body.name,
         location: req.body.location,
         destination: req.body.destination,
@@ -50,17 +53,18 @@ app.post('/api/create-driver',(req,res)=>{
         prefList: [-1, -1],
         spotId: -1
     };
-    drivers.push(driver);
+    drivers[driverCount] = driverProperies;
     // console.log(meter.meterAvailDict);
-    res.send(driver);
+    res.send(drivers);
+    driverCount += 1;
 });
 
 // called by server itself to update? or just to test...
 app.put('/api/drivers/:id', (req, res) => {
     // Look up driver
     // If not exist, return 404
-    const driver = drivers.find(c => c.id === parseInt(req.params.id));
-    if (!driver) return res.status(404).send("The driver with given ID is not found.");
+    const queryDriverID = req.params.id;
+    if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
 
     // Validate
     // If invalid, return 400 - Bad Request
@@ -69,6 +73,7 @@ app.put('/api/drivers/:id', (req, res) => {
 
     // Update driver
     // Return updated driver
+    const driver = drivers[queryDriverID];
     driver.name = req.body.name;
     driver.location = req.body.location;
     driver.destination = req.body.destination;
@@ -77,24 +82,23 @@ app.put('/api/drivers/:id', (req, res) => {
     driver.prefList = req.body.prefList;
     driver.spotId = req.body.spotId
     
-    res.send(driver);
+    res.send([queryDriverID, drivers[queryDriverID]]);
 })
 
 app.delete('/api/drivers/:id', (req,res) => {
     // Look up driver
     // If not exist, return 404
-    const driver = drivers.find(c => c.id === parseInt(req.params.id));
-    if (!driver) return res.status(404).send("The driver with given ID is not found.");
+    const queryDriverID = req.params.id;
+    if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
 
     // Delete
-    const idx = drivers.indexOf(driver);
-    drivers.splice(idx, 1);
+    delete drivers[queryDriverID];
 
     // Return deleted driver
-    res.send(driver);
+    res.send(drivers);
 });
 
-module.exports.driversList = drivers;
+module.exports.driversDict = drivers;
 
 const port = process.env.PORT || 8000;
 app.listen(port,()=> console.log(`Listening on port ${port}...`));
