@@ -11,7 +11,6 @@ const data = require('./data');
 //     console.log(err);
 // });
 
-let meterLocDict = {};
 // const meterLocDict = {1:(10,20), 2:(20,30)};   // lat, lon
 
 
@@ -49,31 +48,7 @@ function orderByDestMeterDist( a, b ) {
   }
 
 
-function fetchData(callback) {
-    data.csvDataPromise.then((result) => {
-        // Below block is to random-generate spot availability data        
-        for (const key in result) {
-            if (result.hasOwnProperty(key)) {
-                let prob = Math.random();
-                if (prob > 0.9999 && result[key]>0){
-                    result[key][2] += -1;
-                }
-                else if (pro < 0.0001 && result[key]<10){
-                    result[key][2] += 1;
-                }
-            }
-        }
-        //
-    
-        meterLocDict = result;
-        console.log(meterLocDict[1183087]);
-    });
-
-    callback();
-}
-
-
-function genDriverPrefList(callback) {
+  function genDriverPrefList(rawMeterData) {
     //  NOTE: change for ... in ... to Object.keys().foreach()
     for (const key in app.driversDict) {
         if (app.driversDict.hasOwnProperty(key)) {
@@ -88,8 +63,25 @@ function genDriverPrefList(callback) {
             //BUG: driver not global
         }
     }
+}
 
-    callback();
+
+function randomizeMeterAvail(rawMeterData) {
+    // Below block is to random-generate spot availability data        
+    for (const key in rawMeterData) {
+        if (rawMeterData.hasOwnProperty(key)) {
+            let prob = Math.random();
+            if (prob > 0.9999 && rawMeterData[key]>0){
+                rawMeterData[key][2] += -1;
+            }
+            else if (pro < 0.0001 && rawMeterData[key]<10){
+                rawMeterData[key][2] += 1;
+            }
+        }
+    }
+    //
+    console.log(rawMeterData[1183087]);
+    return rawMeterData;
 }
 
 
@@ -124,10 +116,18 @@ function DisEGS() {
 
 
 function interval_DisEGS(){
-    setInterval(
-        fetchData(genDriverPrefList(DisEGS)
-            ), 5000
-        );
+    setInterval(() => {
+        // fetchData(genDriverPrefList(DisEGS))
+        data.csvDataPromise
+        .then((rawMeterData) => {
+            genDriverPrefList(rawMeterData);
+            randomizeMeterAvail(rawMeterData);
+        })
+        .then((randomizedData) => DisEGS(randomizedData))
+        
+    }, 5000);
 }
 
-module.exports.doDisEGS = interval_DisEGS;
+module.exports.main = interval_DisEGS;
+
+// meterLocDict becomes the result of promise, need a lot of changes!
