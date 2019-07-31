@@ -1,5 +1,5 @@
 const app = require("./app");
-const data = require('./data');
+// const meterData = require('./meterData');
 
 
 // data.readMeterLocData()
@@ -40,45 +40,45 @@ function calc_dist_from_lat_lon(loc1, loc2) {
 }
 
 
-function orderByDestMeterDist( a, b ) {
-    if ( a[1] < b[1] ){ return 1; }
-    if ( a[1] > b[1] ){ return -1; }
-    return 0;
-  }
+// function orderByDestMeterDist( a, b ) {
+//     if ( a[1] < b[1] ){ return 1; }
+//     if ( a[1] > b[1] ){ return -1; }
+//     return 0;
+// }
 
 
-  function genDriverPrefList(rawMeterData) {
-    for (const driverID in app.driversDict) {
-        if (app.driversDict.hasOwnProperty(driverID)) {
-            let count = 0;
-            for (const meterID in rawMeterData) {
-                if (rawMeterData.hasOwnProperty(meterID)) {
-                    let destMeterDist = calc_dist_from_lat_lon(app.driversDict[driverID].destination, rawMeterData[meterID][0]);
-                    if (destMeterDist < app.driversDict[driverID].walkDist && rawMeterData[meterID][2] < app.driversDict[driverID].price && count < 5) {
-                        app.driversDict[driverID].prefList.push([meterID, destMeterDist]);
-                        count += 1;
-                    }
-                }
-            }
+// function genDriverPrefList(rawMeterData) {
+//     for (const driverID in app.driversDict) {
+//         if (app.driversDict.hasOwnProperty(driverID)) {
+//             let count = 0;
+//             for (const meterID in rawMeterData) {
+//                 if (rawMeterData.hasOwnProperty(meterID)) {
+//                     let destMeterDist = calc_dist_from_lat_lon(app.driversDict[driverID].destination, rawMeterData[meterID][0]);
+//                     if (destMeterDist < app.driversDict[driverID].walkDist && rawMeterData[meterID][2] < app.driversDict[driverID].price && count < 5) {
+//                         app.driversDict[driverID].prefList.push([meterID, destMeterDist]);
+//                         count += 1;
+//                     }
+//                 }
+//             }
             
-            app.driversDict[driverID].prefList.sort(orderByDestMeterDist);  // NOTE: check if descending order by destMeterDist
-            // console.log(driver.prefList);
-            // console.log(app.driversDict);
-            //BUG: driver not global
-        }
-    }
-}
+//             app.driversDict[driverID].prefList.sort(orderByDestMeterDist);  // NOTE: check if descending order by destMeterDist
+//             // console.log(driver.prefList);
+//             // console.log(app.driversDict);
+//             //BUG: driver not global
+//         }
+//     }
+// }
 
 
-function randomizeMeterAvail(rawMeterData) {
+async function randomizeMeterAvail(rawMeterData) {
     // Below block is to random-generate spot availability data        
     for (const meterID in rawMeterData) {
         if (rawMeterData.hasOwnProperty(meterID)) {
             let prob = Math.random();
-            if (prob > 0.9999 && rawMeterData[meterID][1]>0){
+            if (prob > 0.99999 && rawMeterData[meterID][1]>0){
                 rawMeterData[meterID][1] += -1;
             }
-            else if (prob < 0.0001 && rawMeterData[meterID][1]<10){
+            else if (prob < 0.00001 && rawMeterData[meterID][1]<1){
                 rawMeterData[meterID][1] += 1;
             }
         }
@@ -116,7 +116,7 @@ function DisEGS(randomizedMeterData) {
                             randomizedMeterData[meterID][4] = driverID; // update meter partner
                             randomizedMeterData[meterID][3] = locMeterDist; // update meter preference
                             randomizedMeterData[meterID][1] += -1; // update meter avail
-                            app.driversDict[driverID].spotID = meterID; // update driver spotID
+                            app.driversDict[driverID].spotId = meterID; // update driver spotID
                         }
                     }
                 }
@@ -126,19 +126,29 @@ function DisEGS(randomizedMeterData) {
 }
 
 
-function interval_DisEGS(){
-    setInterval(() => {
+function interval_DisEGS(rawMeterData){
+    setInterval(async () => {
         // fetchData(genDriverPrefList(DisEGS))
         console.log("tick");
-        data.csvDataPromise
-        .then((rawMeterData) => {
-            genDriverPrefList(rawMeterData);
-            randomizeMeterAvail(rawMeterData);
-        })
-        .then((randomizedMeterData) => DisEGS(randomizedMeterData))
-        
+        console.log(app.driversDict);
+        const randomizedMeterData = await randomizeMeterAvail(rawMeterData);
+        DisEGS(randomizedMeterData);
     }, 5000);
 }
+
+// function interval_DisEGS(){
+//     setInterval(() => {
+//         // fetchData(genDriverPrefList(DisEGS))
+//         console.log("tick");
+//         meterData.csvDataPromise
+//         .then((rawMeterData) => {
+//             genDriverPrefList(rawMeterData);
+//             randomizeMeterAvail(rawMeterData);
+//         })
+//         .then((randomizedMeterData) => DisEGS(randomizedMeterData))
+        
+//     }, 5000);
+// }
 
 module.exports.main = interval_DisEGS;
 

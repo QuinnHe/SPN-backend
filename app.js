@@ -1,17 +1,27 @@
 const Joi = require('@hapi/joi');
 const express = require('express');
 
+const meterData = require('./meterData');
 const matching = require('./matching');
 
 const app = express();
 app.use(express.json());
 
 let drivers = {};
-let driverCount = 2;
-drivers[0] = {name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1};
-drivers[1] = {name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1};    // as examples
+let driverCount = 0;
+let dataOfMeters = {};
+// drivers[0] = {name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1};
+// drivers[1] = {name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1};    // as examples
 
-matching.main();
+// matching.main();
+
+
+meterData.csvDataPromise
+.then((rawMeterData) => {
+    dataOfMeters = rawMeterData;
+    matching.main(rawMeterData)
+});
+
 
 app.get('/', (req,res ) => {
     res.send('Now Jack is cracking Express!!!');
@@ -41,19 +51,49 @@ app.post('/api/create-driver',(req,res)=>{
     const { error } = validateDriver(req.body); // access property "error" directly without declaring object "result"
     if(error) return res.status(400).send(error.details[0].message);    // return to stop this function from executing due to error while sending the error code
 
-    const driverProperies = {
-        // later id will be assigned by db
-        name: req.body.name,
-        location: req.body.location,
+    const requestContent = {
         destination: req.body.destination,
         walkDist: req.body.walkDist,
         price: req.body.price,
-        prefList: [-1, -1],
-        spotId: -1
     };
-    drivers[driverCount] = driverProperies;
-    res.send(drivers);
-    driverCount += 1;
+
+    const prefListPromise = new Promise(
+        function genDriverPrefList(resolve, reject) {
+            const newPrefList = [];
+            let count = 0;
+            for (const meterID in dataOfMeters) {
+                if (dataOfMeters.hasOwnProperty(meterID)) {
+                    const destMeterDist = calc_dist_from_lat_lon(requestContent.destination, dataOfMeters[meterID][0]);
+                    if (destMeterDist < requestContent.walkDist && dataOfMeters[meterID][2] < requestContent.price && count < 5) {
+                        newPrefList.push([meterID, destMeterDist]);
+                        count += 1;
+                    }
+                }
+            }
+        
+            newPrefList.sort(orderByDestMeterDist);  // NOTE: check if descending order by destMeterDist
+            resolve(newPrefList);
+        });
+
+
+    prefListPromise
+    .then((newPrefList) => {
+        console.log(newPrefList)
+        const driverProperties = {
+            // later id will be assigned by db
+            name: req.body.name,
+            location: req.body.location,
+            destination: req.body.destination,
+            walkDist: req.body.walkDist,
+            price: req.body.price,
+            prefList: newPrefList,
+            spotId: -1
+        };
+        drivers[driverCount] = driverProperties;
+        res.send(drivers);
+        driverCount += 1;
+    })
+    .catch((error) => { console.log(error); });
 });
 
 // called by server itself to update? or just to test...
@@ -112,4 +152,34 @@ function validateDriver(driver){
         spotId: Joi.number().required()
     };
     return Joi.validate(driver,schema);
+}
+
+
+function degToRad(deg) {
+    return deg * (Math.PI/180);
+}
+
+
+// lon1, lat1, lon2, lat2
+function calc_dist_from_lat_lon(loc1, loc2) {
+    const R = 6371; // Radius of Earth in km
+    let rlat1 = degToRad(loc1[1]);
+    let rlat2 = degToRad(loc2[1]);
+    let dlon = degToRad(loc2[0]-loc1[0]);
+    let dlat = degToRad(loc2[1]-loc1[1]);
+
+    let a = Math.sin(dlat/2) * Math.sin(dlat/2) +
+            Math.cos(rlat1) * Math.cos(rlat2) *
+            Math.sin(dlon/2) * Math.sin(dlon/2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    let d = R * c;  // Distance in km
+    return d;
+}
+
+
+function orderByDestMeterDist( a, b ) {
+    if ( a[1] < b[1] ){ return 1; }
+    if ( a[1] > b[1] ){ return -1; }
+    return 0;
 }
