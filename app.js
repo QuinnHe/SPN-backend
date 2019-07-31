@@ -181,7 +181,7 @@ function calc_dist_from_lat_lon(loc1, loc2) {
 
 
 function orderByDestMeterDist( a, b ) {
-    if ( a[1] < b[1] ){ return 1; }
-    if ( a[1] > b[1] ){ return -1; }
+    if ( a[1] < b[1] ){ return -1; }
+    if ( a[1] > b[1] ){ return 1; }
     return 0;
 }
