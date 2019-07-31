@@ -94,7 +94,7 @@ function DisEGS(randomizedMeterData) {
         if (app.driversDict.hasOwnProperty(driverID)) {
             const driver = app.driversDict[driverID];   // dummy variable to save access and code
             if (driver.spotId === -1 && driver.prefList.length > 0) {
-                app.driversDict[driverID].spotId = driver.prefList[driver.prefList.length-1][0];
+                app.driversDict[driverID].spotId = driver.prefList[driver.prefList.length-1][0];    // NOTE: later delete this line
 
                 for (const meterID in randomizedMeterData) {
                     if (randomizedMeterData.hasOwnProperty(meterID)) {
@@ -108,8 +108,10 @@ function DisEGS(randomizedMeterData) {
                                 const partnerID = meterProperties[4];    // NOTE: choose the first found driver to drop if a meter has multiple spots 
                                 console.log(partnerID)
                                 // const partner = app.driversDict.find(c => c.id === meterPartnerDict[meterID]);
-                                app.driversDict[partnerID].prefList.pop();
-                                app.driversDict[partnerID].spotId = -1;
+                                if (partnerID != -1) {
+                                    app.driversDict[partnerID].prefList.pop();
+                                    app.driversDict[partnerID].spotId = -1;
+                                }
                             }
 
                             console.log("Spot under meterID:", meterID, "has been assigned to driver", driverID);

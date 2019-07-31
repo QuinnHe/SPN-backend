@@ -9,7 +9,6 @@ app.use(express.json());
 
 let drivers = {};
 let driverCount = 0;
-let dataOfMeters = {};
 // drivers[0] = {name: 'Quinn', location:[40.1,-73.4], destination: [40.5,-73.5], walkDist: 2, price: 10, prefList: [[0,0.2],[1,0.4]], spotId: -1};
 // drivers[1] = {name: 'Jack', location:[40.2,-73.3], destination: [40.5,-73.5], walkDist: 0.5, price: 2, prefList: [[3,0.1],[4,0.2]], spotId: -1};    // as examples
 
@@ -18,7 +17,7 @@ let dataOfMeters = {};
 
 meterData.csvDataPromise
 .then((rawMeterData) => {
-    dataOfMeters = rawMeterData;
+    console.log('Meter data loaded!');
     matching.main(rawMeterData)
 });
 
@@ -61,10 +60,13 @@ app.post('/api/create-driver',(req,res)=>{
         function genDriverPrefList(resolve, reject) {
             const newPrefList = [];
             let count = 0;
+
+            const dataOfMeters = meterData.getRawMeterData();   // NOTE: problem here?
+
             for (const meterID in dataOfMeters) {
                 if (dataOfMeters.hasOwnProperty(meterID)) {
                     const destMeterDist = calc_dist_from_lat_lon(requestContent.destination, dataOfMeters[meterID][0]);
-                    if (destMeterDist < requestContent.walkDist && dataOfMeters[meterID][2] < requestContent.price && count < 5) {
+                    if (destMeterDist <= requestContent.walkDist && dataOfMeters[meterID][2] <= requestContent.price && count < 5) {
                         newPrefList.push([meterID, destMeterDist]);
                         count += 1;
                     }

@@ -12,9 +12,12 @@ const p1 = new Promise(
             })
             .on('data', (data) => {
                 // csvData[meterID] = [[LON, LAT], avail, price, pref, partner]
+                // csvData[data[0]] = [
+                //     [data[1], data[2]], Math.round(1 * Math.random()), Math.round(20 * Math.random()), 5, -1
+                // ];
                 csvData[data[0]] = [
-                    [data[1], data[2]], Math.round(1 * Math.random()), Math.round(20 * Math.random()), 5, -1
-                ];
+                    [data[1], data[2]], Math.round(1 * Math.random()), 10, 5, -1
+                ];  // NOTE: fix price at 10 to test, later switch abck to randomized price above
             })
             .on('end', (rowCount) => {
                 console.log('Parsing complete, read', rowCount, 'records.');
@@ -22,10 +25,10 @@ const p1 = new Promise(
             });
     });
 
-// const getCsvData = () => csvData;
+const getCsvData = () => csvData;
 
 module.exports.csvDataPromise = p1;
-// module.exports.getRawMeterData = getCsvData;
+module.exports.getRawMeterData = getCsvData;
 
 // async function readCsv() {
 //     let csvData = {};
