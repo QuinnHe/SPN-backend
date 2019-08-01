@@ -42,7 +42,8 @@ app.get('/api/drivers/:id', (req,res) => {
     // if (!driver) return res.status(404).send("The driver with given ID is not found.");
     const queryDriverID = req.params.id;
     if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
-    res.send([queryDriverID, drivers[queryDriverID]]);   // res.send() can only be executed once!
+    const dataOfMeters = meterData.getRawMeterData();
+    res.send(dataOfMeters[drivers[queryDriverID].spotId][0]);   // res.send() can only be executed once!
 });
 
 // called by users
@@ -92,7 +93,7 @@ app.post('/api/create-driver',(req,res)=>{
             spotId: -1
         };
         drivers[driverCount] = driverProperties;
-        res.send(drivers);
+        res.send(driverCount.toString());
         driverCount += 1;
     })
     .catch((error) => { console.log(error); });
