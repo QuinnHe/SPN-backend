@@ -34,13 +34,16 @@ app.get('/api/drivers', (req,res) =>{
     res.send(drivers);    // NOTE: switch to db in future
 });
 
-app.get('/api/drivers/:id', (req,res) => {
+app.get('/api/drivers/:id/:locationX/:locationY', (req,res) => {
     // res.send(req.params);
 
     // 2 lines below commented out due to change of drivers from an array to a dictionary object
     // const driver = drivers.find(c => c.id === parseInt(req.params.id));
     // if (!driver) return res.status(404).send("The driver with given ID is not found.");
     const queryDriverID = req.params.id;
+    const queryDriverX = parseFloat(req.params.locationX);
+    const queryDriverY = parseFloat(req.params.locationY);
+    drivers[queryDriverID].location = [req.params.locationX,req.params.locationY];
     if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
     const dataOfMeters = meterData.getRawMeterData();
     res.send(dataOfMeters[drivers[queryDriverID].spotId][0]);   // res.send() can only be executed once!
@@ -67,7 +70,7 @@ app.post('/api/create-driver',(req,res)=>{
             for (const meterID in dataOfMeters) {
                 if (dataOfMeters.hasOwnProperty(meterID)) {
                     const destMeterDist = calc_dist_from_lat_lon(requestContent.destination, dataOfMeters[meterID][0]);
-                    if (destMeterDist <= requestContent.walkDist && dataOfMeters[meterID][2] <= requestContent.price && count < 5) {
+                    if (destMeterDist <= requestContent.walkDist && dataOfMeters[meterID][2] <= requestContent.price && count < 20) {
                         newPrefList.push([meterID, destMeterDist]);
                         count += 1;
                     }
