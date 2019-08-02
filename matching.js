@@ -117,6 +117,7 @@ function DisEGS(randomizedMeterData) {
                                 continue
                             } else {    // meter occupied by system user
                                 // const partner = app.driversDict.find(c => c.id === meterPartnerDict[meterID]);
+                                const partnerID = meterProperties[4];
                                 if (partnerID != -1) {  // driver taken spot is in our system
                                     app.driversDict[partnerID].spotId = -1;
                                 }
