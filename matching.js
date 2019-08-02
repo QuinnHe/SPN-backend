@@ -77,6 +77,11 @@ async function randomizeMeterAvail(rawMeterData) {
             let prob = Math.random();
             if (prob > 0.999999 && rawMeterData[meterID][1]>0){
                 rawMeterData[meterID][1] += -1;
+                if (rawMeterData[meterID][4] != -1){
+                    app.driversDict[rawMeterData[meterID][4]].spotId = -1;
+                    rawMeterData[meterID][4] = -1;
+                    rawMeterData[meterID][3] = 25000;
+                }
             }
             else if (prob < 0.000001 && rawMeterData[meterID][1]<1){
                 rawMeterData[meterID][1] += 1;
@@ -90,32 +95,37 @@ async function randomizeMeterAvail(rawMeterData) {
 
 
 function DisEGS(randomizedMeterData) {
+
     for (const driverID in app.driversDict) {
         if (app.driversDict.hasOwnProperty(driverID)) {
             const driver = app.driversDict[driverID];   // dummy variable to save access and code
-            if (driver.spotId === -1 && driver.prefList.length > 0) {
+            if (driver.spotId != -1) {
+                const meterID = driver.spotId;
+                const meterProperties = randomizedMeterData[meterID];
+                let locMeterDist = calc_dist_from_lat_lon(driver.location, meterProperties[0]);
+                randomizedMeterData[meterID][3] = locMeterDist;
+            } else {
                 for (let prefIdx = 0 ; prefIdx < driver.prefList.length; prefIdx++) {
                     const meterID = driver.prefList[prefIdx][0];
                     if (randomizedMeterData.hasOwnProperty(meterID)) {
                         const meterProperties = randomizedMeterData[meterID];   // dummy variable to save access and code
                         let locMeterDist = calc_dist_from_lat_lon(driver.location, meterProperties[0]);
                         if (locMeterDist < meterProperties[3]) {
-                            if (meterProperties[1] === 0) {
+                            if (meterProperties[1] === 0) { // meter occupied by outside user
                                 const partnerID = meterProperties[4];    // NOTE: choose the first found driver to drop if a meter has multiple spots 
-                                console.log("Unavailable meter info:\nmeterID: %d, #vacantSpots: %d, currentPartner: %d",meterID, meterProperties[1], partnerID);
+                                console.log("Meter occupied by outside user!\nmeterID: %d, #vacantSpots: %d, currentPartner: %d",meterID, meterProperties[1], partnerID);
+                                continue
+                            } else {    // meter occupied by system user
                                 // const partner = app.driversDict.find(c => c.id === meterPartnerDict[meterID]);
                                 if (partnerID != -1) {  // driver taken spot is in our system
                                     app.driversDict[partnerID].spotId = -1;
-                                } else {
-                                    continue;
                                 }
+                                randomizedMeterData[meterID][4] = driverID; // update meter partner
+                                randomizedMeterData[meterID][3] = locMeterDist; // update meter preference
+                                app.driversDict[driverID].spotId = meterID; // update driver spotID
+                                console.log("Spot under meterID:", meterID, "has been assigned to driver", driverID);
+                                break;
                             }
-                            randomizedMeterData[meterID][4] = driverID; // update meter partner
-                            randomizedMeterData[meterID][3] = locMeterDist; // update meter preference
-                            randomizedMeterData[meterID][1] += -1; // update meter avail
-                            app.driversDict[driverID].spotId = meterID; // update driver spotID
-                            console.log("Spot under meterID:", meterID, "has been assigned to driver", driverID);
-                            break;
                         }
                     }
                 }
