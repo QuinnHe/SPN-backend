@@ -43,10 +43,14 @@ app.get('/api/drivers/:id/:locationX/:locationY', (req,res) => {
     const queryDriverID = req.params.id;
     const queryDriverX = parseFloat(req.params.locationX);
     const queryDriverY = parseFloat(req.params.locationY);
-    drivers[queryDriverID].location = [req.params.locationX,req.params.locationY];
+    drivers[queryDriverID].location = [queryDriverX,queryDriverY];
     if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
     const dataOfMeters = meterData.getRawMeterData();
-    res.send(dataOfMeters[drivers[queryDriverID].spotId][0]);   // res.send() can only be executed once!
+    if (drivers[queryDriverID].spotId != -1) {res.send(dataOfMeters[drivers[queryDriverID].spotId][0])}
+    else{
+        res.status(404)
+        .send('Not found');
+    };  
 });
 
 // called by users
@@ -135,6 +139,12 @@ app.delete('/api/drivers/:id', (req,res) => {
     if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
 
     // Delete
+    const dataOfMeters = meterData.getRawMeterData();
+    if (drivers[queryDriverID].spotId != -1) {
+        dataOfMeters[drivers[queryDriverID].spotId][4] = -1;
+        //Reduce avail maually due to lack of sensors
+        dataOfMeters[drivers[queryDriverID].spotId][1] += -1;
+    };
     delete drivers[queryDriverID];
 
     // Return deleted driver
