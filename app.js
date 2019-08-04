@@ -47,14 +47,14 @@ app.get('/api/drivers/:id/:locationX/:locationY', (req,res) => {
     if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
 
     const dataOfMeters = meterData.getRawMeterData();
-    if (calc_dist_from_lat_lon([queryDriverX, queryDriverY], dataOfMeters[drivers[queryDriverID].spotId][0]) < 0.05) return res.send("taken")
-
     // if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
     if (drivers[queryDriverID].spotId != -1) {
-        res.send(dataOfMeters[drivers[queryDriverID].spotId][0])
+        // driver approach assigned spot
+        if (calc_dist_from_lat_lon([queryDriverX, queryDriverY], dataOfMeters[drivers[queryDriverID].spotId][0]) < 0.05) return res.send("taken");
+        return res.send(dataOfMeters[drivers[queryDriverID].spotId][0])
     } else {    // Invalid spot
-        res.status(404).send('Spot not found!');
-    };  
+        return res.status(404).send('Spot not found!');
+    }
 });
 
 // called by users
@@ -147,11 +147,12 @@ app.delete('/api/drivers/:id', (req,res) => {
         dataOfMeters[drivers[queryDriverID].spotId][4] = -1;
         //Reduce avail maually due to lack of sensors
         dataOfMeters[drivers[queryDriverID].spotId][1] += -1;
+        console.log(dataOfMeters[drivers[queryDriverID].spotId][1]);
     };
     delete drivers[queryDriverID];
 
     // Return deleted spot avail
-    res.send(dataOfMeters[drivers[queryDriverID].spotId][1]);
+    res.send("Logout!");
 });
 
 module.exports.driversDict = drivers;

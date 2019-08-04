@@ -99,17 +99,20 @@ function DisEGS(randomizedMeterData) {
     for (const driverID in app.driversDict) {
         if (app.driversDict.hasOwnProperty(driverID)) {
             const driver = app.driversDict[driverID];   // dummy variable to save access and code
-            if (driver.spotId != -1) {
-                const meterID = driver.spotId;
-                const meterProperties = randomizedMeterData[meterID];
-                let locMeterDist = calc_dist_from_lat_lon(driver.location, meterProperties[0]);
-                randomizedMeterData[meterID][3] = locMeterDist;
-            } else {
-                for (let prefIdx = 0 ; prefIdx < driver.prefList.length; prefIdx++) {
-                    const meterID = driver.prefList[prefIdx][0];
-                    if (randomizedMeterData.hasOwnProperty(meterID)) {
-                        const meterProperties = randomizedMeterData[meterID];   // dummy variable to save access and code
-                        let locMeterDist = calc_dist_from_lat_lon(driver.location, meterProperties[0]);
+            // if (driver.spotId != -1) {
+            //     const meterID = driver.spotId;
+            //     const meterProperties = randomizedMeterData[meterID];
+            //     let locMeterDist = calc_dist_from_lat_lon(driver.location, meterProperties[0]);
+            //     randomizedMeterData[meterID][3] = locMeterDist;
+            // } else {
+            for (let prefIdx = 0 ; prefIdx < driver.prefList.length; prefIdx++) {
+                const meterID = driver.prefList[prefIdx][0];
+                if (randomizedMeterData.hasOwnProperty(meterID)) {
+                    const meterProperties = randomizedMeterData[meterID];   // dummy variable to save access and code
+                    let locMeterDist = calc_dist_from_lat_lon(driver.location, meterProperties[0]);
+                    if (meterProperties[4] == driverID) {   // no need to challenge oneself
+                        break
+                    } else {
                         if (locMeterDist < meterProperties[3]) {
                             if (meterProperties[1] === 0) { // meter occupied by outside user
                                 const partnerID = meterProperties[4];    // NOTE: choose the first found driver to drop if a meter has multiple spots 
@@ -131,6 +134,7 @@ function DisEGS(randomizedMeterData) {
                     }
                 }
             }
+            // }
         }
     }
 }
