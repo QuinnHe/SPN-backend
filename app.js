@@ -45,11 +45,15 @@ app.get('/api/drivers/:id/:locationX/:locationY', (req,res) => {
     const queryDriverY = parseFloat(req.params.locationY);
     drivers[queryDriverID].location = [queryDriverX,queryDriverY];
     if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
+
     const dataOfMeters = meterData.getRawMeterData();
-    if (drivers[queryDriverID].spotId != -1) {res.send(dataOfMeters[drivers[queryDriverID].spotId][0])}
-    else{
-        res.status(404)
-        .send('Not found');
+    if (calc_dist_from_lat_lon([queryDriverX, queryDriverY], dataOfMeters[drivers[queryDriverID].spotId][0]) < 0.05) return res.send("taken")
+
+    // if (!drivers.hasOwnProperty(queryDriverID)) return res.status(404).send("The driver with given ID is not found.");
+    if (drivers[queryDriverID].spotId != -1) {
+        res.send(dataOfMeters[drivers[queryDriverID].spotId][0])
+    } else {    // Invalid spot
+        res.status(404).send('Spot not found!');
     };  
 });
 
@@ -84,7 +88,6 @@ app.post('/api/create-driver',(req,res)=>{
             newPrefList.sort(orderByDestMeterDist);  // NOTE: check if descending order by destMeterDist
             resolve(newPrefList);
         });
-
 
     prefListPromise
     .then((newPrefList) => {
