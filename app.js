@@ -147,8 +147,8 @@ app.delete('/api/drivers/:id', (req,res) => {
     };
     delete drivers[queryDriverID];
 
-    // Return deleted driver
-    res.send(drivers);
+    // Return deleted spot avail
+    res.send(dataOfMeters[drivers[queryDriverID].spotId][1]);
 });
 
 module.exports.driversDict = drivers;
